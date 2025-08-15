@@ -1,3 +1,5 @@
+import 'package:eusebia_app/core/constants/extensions.dart';
+import 'package:eusebia_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
@@ -9,49 +11,44 @@ import '../../features/settings/presentation/pages/settings_page.dart';
 
 /// Application router configuration
 class AppRouter {
-  static const String home = '/';
-  static const String tasks = '/tasks';
-  static const String search = '/search';
-  static const String settings = '/settings';
-  static const String taskDetail = '/task/:id';
-  static const String addTask = '/add-task';
-  static const String editTask = '/edit-task/:id';
-
   static final GoRouter router = GoRouter(
-    initialLocation: home,
+    initialLocation: AppRoutes.home,
     routes: [
-      GoRoute(path: home, redirect: (context, state) => tasks),
       GoRoute(
-        path: tasks,
-        name: 'tasks',
+        path: AppRoutes.home,
+        redirect: (context, state) => AppRoutes.tasks.path,
+      ),
+      GoRoute(
+        path: AppRoutes.tasks.path,
+        name: AppRoutes.tasks,
         builder: (context, state) => const TasksPage(),
       ),
       GoRoute(
-        path: search,
-        name: 'search',
+        path: AppRoutes.search.path,
+        name: AppRoutes.search,
         builder: (context, state) => const SearchPage(),
       ),
       GoRoute(
-        path: settings,
-        name: 'settings',
+        path: AppRoutes.settings.path,
+        name: AppRoutes.settings,
         builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
-        path: taskDetail,
-        name: 'task-detail',
+        path: "${AppRoutes.taskDetail.path}/:id",
+        name: AppRoutes.taskDetail,
         builder: (context, state) {
           final taskId = state.pathParameters['id']!;
           return TaskDetailPage(taskId: taskId);
         },
       ),
       GoRoute(
-        path: addTask,
-        name: 'add-task',
+        path: AppRoutes.addTask.path,
+        name: AppRoutes.addTask,
         builder: (context, state) => const AddTaskPage(),
       ),
       GoRoute(
-        path: editTask,
-        name: 'edit-task',
+        path: "${AppRoutes.editTask.path}/:id",
+        name: AppRoutes.editTask,
         builder: (context, state) {
           final taskId = state.pathParameters['id']!;
           return EditTaskPage(taskId: taskId);
