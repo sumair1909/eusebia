@@ -2,6 +2,7 @@ import 'package:eusebia_app/core/constants/extensions.dart';
 import 'package:eusebia_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/tasks/domain/entities/task.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/tasks/presentation/pages/task_detail_page.dart';
 import '../../features/tasks/presentation/pages/add_task_page.dart';
@@ -34,11 +35,11 @@ class AppRouter {
         builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
-        path: "${AppRoutes.taskDetail.path}/:id",
+        path: AppRoutes.taskDetail.path,
         name: AppRoutes.taskDetail,
         builder: (context, state) {
-          final taskId = state.pathParameters['id']!;
-          return TaskDetailPage(taskId: taskId);
+          final task = state.extra as Task;
+          return TaskDetailPage(task: task);
         },
       ),
       GoRoute(
@@ -47,11 +48,11 @@ class AppRouter {
         builder: (context, state) => const AddTaskPage(),
       ),
       GoRoute(
-        path: "${AppRoutes.editTask.path}/:id",
+        path: AppRoutes.editTask.path,
         name: AppRoutes.editTask,
         builder: (context, state) {
-          final taskId = state.pathParameters['id']!;
-          return EditTaskPage(taskId: taskId);
+          final task = state.extra as Task;
+          return EditTaskPage(task: task);
         },
       ),
     ],
