@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -40,16 +41,28 @@ class SettingsNotifier extends StateNotifier<AsyncValue<Settings>> {
   Future<void> updateTheme(ThemeMode themeMode) async {
     if (state.value == null) return;
 
+    developer.log('SettingsNotifier: Updating theme to $themeMode');
+
     try {
       final result = await updateThemeMode(themeMode.name);
       result.fold(
-        (failure) => state = AsyncValue.error(failure, StackTrace.current),
+        (failure) {
+          developer.log('SettingsNotifier: Theme update failed: $failure');
+          state = AsyncValue.error(failure, StackTrace.current);
+        },
         (_) {
+          developer.log(
+            'SettingsNotifier: Theme update successful, updating state',
+          );
           final updatedSettings = state.value!.copyWith(themeMode: themeMode);
           state = AsyncValue.data(updatedSettings);
+          developer.log(
+            'SettingsNotifier: State updated with theme: ${updatedSettings.themeMode}',
+          );
         },
       );
     } catch (e, stackTrace) {
+      developer.log('SettingsNotifier: Theme update error: $e');
       state = AsyncValue.error(e, stackTrace);
     }
   }

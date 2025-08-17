@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/enums.dart';
 import '../models/settings_model.dart';
@@ -38,13 +40,16 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   @override
   Future<SettingsModel> getSettings() async {
     try {
+      developer.log('Getting settings from SharedPreferences');
+
       // Try to get complete settings object first
       final settingsJson = sharedPreferences.getString(_settingsKey);
       if (settingsJson != null) {
-        final Map<String, dynamic> settingsMap = Map<String, dynamic>.from(
-          settingsJson as Map<String, dynamic>,
-        );
-        return SettingsModel.fromJson(settingsMap);
+        developer.log('Found complete settings JSON: $settingsJson');
+        final Map<String, dynamic> settingsMap = json.decode(settingsJson);
+        final settings = SettingsModel.fromJson(settingsMap);
+        developer.log('Parsed settings theme mode: ${settings.themeMode}');
+        return settings;
       }
 
       // Fallback to individual keys for backward compatibility
@@ -54,6 +59,8 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
       final language = sharedPreferences.getString(_languageKey) ?? 'en';
       final autoSaveEnabled = sharedPreferences.getBool(_autoSaveKey) ?? true;
 
+      developer.log('Using fallback settings, theme mode: $themeMode');
+
       return SettingsModel(
         themeMode: _parseThemeMode(themeMode),
         notificationsEnabled: notificationsEnabled,
@@ -61,6 +68,7 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
         autoSaveEnabled: autoSaveEnabled,
       );
     } catch (e) {
+      developer.log('Error getting settings: $e');
       // Return default settings if any error occurs
       return SettingsModel.defaultSettings();
     }
@@ -69,9 +77,13 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   @override
   Future<void> saveSettings(SettingsModel settings) async {
     try {
+      developer.log(
+        'Saving settings to SharedPreferences, theme mode: ${settings.themeMode}',
+      );
+
       // Save complete settings object
-      final settingsJson = settings.toJson();
-      await sharedPreferences.setString(_settingsKey, settingsJson.toString());
+      final settingsJson = json.encode(settings.toJson());
+      await sharedPreferences.setString(_settingsKey, settingsJson);
 
       // Also save individual keys for backward compatibility
       await sharedPreferences.setString(_themeModeKey, settings.themeMode.name);
@@ -81,7 +93,10 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
       );
       await sharedPreferences.setString(_languageKey, settings.language);
       await sharedPreferences.setBool(_autoSaveKey, settings.autoSaveEnabled);
+
+      developer.log('Settings saved successfully');
     } catch (e) {
+      developer.log('Error saving settings: $e');
       throw Exception('Failed to save settings: $e');
     }
   }
@@ -89,6 +104,8 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   @override
   Future<void> updateThemeMode(String themeMode) async {
     try {
+      developer.log('Updating theme mode to: $themeMode');
+
       await sharedPreferences.setString(_themeModeKey, themeMode);
 
       // Update the complete settings object as well
@@ -97,7 +114,10 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
         themeMode: _parseThemeMode(themeMode),
       );
       await saveSettings(updatedSettings);
+
+      developer.log('Theme mode updated successfully');
     } catch (e) {
+      developer.log('Error updating theme mode: $e');
       throw Exception('Failed to update theme mode: $e');
     }
   }
@@ -149,7 +169,7 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   }
 
   /// Parse theme mode string to ThemeMode enum
-  dynamic _parseThemeMode(String themeMode) {
+  ThemeMode _parseThemeMode(String themeMode) {
     switch (themeMode.toLowerCase()) {
       case 'light':
         return ThemeMode.light;
