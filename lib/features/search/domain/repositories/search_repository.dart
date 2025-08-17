@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/search_result.dart';
+import '../usecases/search_content.dart';
 
 /// Repository interface for search operations
 abstract class SearchRepository {
@@ -13,6 +14,11 @@ abstract class SearchRepository {
     List<String> types,
     DateTime? fromDate,
     DateTime? toDate,
+  );
+
+  /// Search tasks with advanced filters
+  Future<Either<Failure, List<SearchResult>>> searchTasks(
+    TaskSearchParams params,
   );
 
   /// Get search suggestions

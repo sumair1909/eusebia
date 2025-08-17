@@ -186,17 +186,10 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         color = Colors.orange;
         text = 'Pending';
         break;
-      case TaskStatus.inProgress:
-        color = Colors.blue;
-        text = 'In Progress';
-        break;
+
       case TaskStatus.completed:
         color = Colors.green;
         text = 'Completed';
-        break;
-      case TaskStatus.cancelled:
-        color = Colors.red;
-        text = 'Cancelled';
         break;
     }
 

@@ -84,7 +84,7 @@ class Task extends Equatable {
 }
 
 /// Task status enumeration
-enum TaskStatus { pending, inProgress, completed, cancelled }
+enum TaskStatus { pending, completed }
 
 /// Task priority enumeration
 enum TaskPriority { low, medium, high, urgent }

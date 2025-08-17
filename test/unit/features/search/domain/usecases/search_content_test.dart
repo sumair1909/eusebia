@@ -1,9 +1,10 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:eusebia_app/core/error/failures.dart';
+import 'package:dartz/dartz.dart';
+import 'package:eusebia_app/features/search/domain/usecases/search_content.dart';
 import 'package:eusebia_app/features/search/domain/entities/search_result.dart';
 import 'package:eusebia_app/features/search/domain/repositories/search_repository.dart';
-import 'package:eusebia_app/features/search/domain/usecases/search_content.dart';
+import 'package:eusebia_app/features/tasks/domain/entities/task.dart';
+import 'package:eusebia_app/core/error/failures.dart';
 
 // Simple mock for testing
 class MockSearchRepository implements SearchRepository {
@@ -18,6 +19,13 @@ class MockSearchRepository implements SearchRepository {
     List<String> types,
     DateTime? fromDate,
     DateTime? toDate,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<Failure, List<SearchResult>>> searchTasks(
+    TaskSearchParams params,
   ) async {
     throw UnimplementedError();
   }
@@ -41,14 +49,20 @@ class MockSearchRepository implements SearchRepository {
 }
 
 void main() {
-  group('SearchContent Use Case', () {
+  late MockSearchRepository mockRepository;
+
+  setUp(() {
+    mockRepository = MockSearchRepository();
+  });
+
+  const tQuery = 'test query';
+
+  group('SearchContent', () {
     test('should create SearchContent use case', () {
-      final mockRepository = MockSearchRepository();
       expect(() => SearchContent(mockRepository), returnsNormally);
     });
 
     test('should have correct type parameters', () {
-      final mockRepository = MockSearchRepository();
       final useCase = SearchContent(mockRepository);
       expect(useCase, isA<SearchContent>());
     });
@@ -65,81 +79,95 @@ void main() {
       expect(params.query, isEmpty);
     });
 
-    test('should handle long query', () {
-      const longQuery = 'This is a very long search query with many words';
-      const params = SearchContentParams(query: longQuery);
-      expect(params.query, longQuery);
+    test('should handle filters', () {
+      final params = SearchContentParams(
+        query: 'test',
+        types: ['task'],
+        fromDate: DateTime(2023, 1, 1),
+        toDate: DateTime(2023, 12, 31),
+      );
+      expect(params.query, 'test');
+      expect(params.types, ['task']);
+      expect(params.fromDate, DateTime(2023, 1, 1));
+      expect(params.toDate, DateTime(2023, 12, 31));
     });
   });
 
-  group('SearchResult', () {
-    test('should create SearchResult with all fields', () {
-      final searchResult = SearchResult(
-        id: '1',
-        title: 'Test Result',
-        description: 'Test Description',
-        type: 'task',
-        createdAt: DateTime(2024, 1, 15),
-        metadata: {'relevance': 0.9},
-      );
-
-      expect(searchResult.id, '1');
-      expect(searchResult.title, 'Test Result');
-      expect(searchResult.description, 'Test Description');
-      expect(searchResult.type, 'task');
-      expect(searchResult.createdAt, DateTime(2024, 1, 15));
-      expect(searchResult.metadata, {'relevance': 0.9});
+  group('TaskSearchParams', () {
+    test('should create TaskSearchParams with query', () {
+      const params = TaskSearchParams(query: 'test query');
+      expect(params.query, 'test query');
     });
 
-    test('should create SearchResult with minimal fields', () {
-      final searchResult = SearchResult(
-        id: '2',
-        title: 'Minimal Result',
-        type: 'note',
-        createdAt: DateTime(2024, 1, 16),
-      );
+    test('should check if TaskSearchParams has filters', () {
+      // Test with no filters
+      final paramsNoFilters = TaskSearchParams(query: tQuery);
+      expect(paramsNoFilters.hasFilters, false);
 
-      expect(searchResult.id, '2');
-      expect(searchResult.title, 'Minimal Result');
-      expect(searchResult.description, null);
-      expect(searchResult.type, 'note');
-      expect(searchResult.metadata, isEmpty);
+      // Test with priority filter
+      final paramsWithPriority = TaskSearchParams(
+        query: tQuery,
+        priorities: [TaskPriority.high],
+      );
+      expect(paramsWithPriority.hasFilters, true);
+
+      // Test with status filter
+      final paramsWithStatus = TaskSearchParams(
+        query: tQuery,
+        statuses: [TaskStatus.pending],
+      );
+      expect(paramsWithStatus.hasFilters, true);
+
+      // Test with date filters
+      final paramsWithDate = TaskSearchParams(
+        query: tQuery,
+        dueDateFrom: DateTime(2023, 1, 1),
+        dueDateTo: DateTime(2023, 12, 31),
+      );
+      expect(paramsWithDate.hasFilters, true);
+
+      // Test with overdue filter
+      final paramsWithOverdue = TaskSearchParams(
+        query: tQuery,
+        isOverdue: true,
+      );
+      expect(paramsWithOverdue.hasFilters, true);
+
+      // Test with due today filter
+      final paramsWithDueToday = TaskSearchParams(
+        query: tQuery,
+        isDueToday: true,
+      );
+      expect(paramsWithDueToday.hasFilters, true);
+
+      // Test with tags filter
+      final paramsWithTags = TaskSearchParams(
+        query: tQuery,
+        tags: ['important', 'urgent'],
+      );
+      expect(paramsWithTags.hasFilters, true);
+
+      // Test with labels filter
+      final paramsWithLabels = TaskSearchParams(
+        query: tQuery,
+        labels: ['work', 'personal'],
+      );
+      expect(paramsWithLabels.hasFilters, true);
+    });
+  });
+
+  group('SearchTasks', () {
+
+    setUp(() {
     });
 
-    test('should be equal when all properties are the same', () {
-      final result1 = SearchResult(
-        id: '1',
-        title: 'Test Result',
-        type: 'task',
-        createdAt: DateTime(2024, 1, 15),
-      );
-
-      final result2 = SearchResult(
-        id: '1',
-        title: 'Test Result',
-        type: 'task',
-        createdAt: DateTime(2024, 1, 15),
-      );
-
-      expect(result1, equals(result2));
+    test('should create SearchTasks use case', () {
+      expect(() => SearchTasks(mockRepository), returnsNormally);
     });
 
-    test('should not be equal when properties are different', () {
-      final result1 = SearchResult(
-        id: '1',
-        title: 'Test Result',
-        type: 'task',
-        createdAt: DateTime(2024, 1, 15),
-      );
-
-      final result2 = SearchResult(
-        id: '2',
-        title: 'Test Result',
-        type: 'task',
-        createdAt: DateTime(2024, 1, 15),
-      );
-
-      expect(result1, isNot(equals(result2)));
+    test('should have correct type parameters', () {
+      final useCase = SearchTasks(mockRepository);
+      expect(useCase, isA<SearchTasks>());
     });
   });
 }

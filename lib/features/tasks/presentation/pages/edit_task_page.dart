@@ -192,6 +192,12 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => _showDeleteConfirmation(context, widget.task),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -351,6 +357,30 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
     );
   }
 
+  void _showDeleteConfirmation(BuildContext context, Task task) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Task'),
+        content: Text('Are you sure you want to delete "${task.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(tasksNotifierProvider.notifier).deleteTask(task.id);
+              context.pop();
+              context.pop();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLabelsSelector() {
     return InkWell(
       onTap: _showLabelsBottomSheet,
@@ -405,12 +435,9 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
     switch (status) {
       case TaskStatus.pending:
         return const Icon(Icons.schedule, color: Colors.orange);
-      case TaskStatus.inProgress:
-        return const Icon(Icons.play_arrow, color: Colors.blue);
+
       case TaskStatus.completed:
         return const Icon(Icons.check_circle, color: Colors.green);
-      case TaskStatus.cancelled:
-        return const Icon(Icons.cancel, color: Colors.red);
     }
   }
 

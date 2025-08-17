@@ -115,6 +115,7 @@ Future<void> _initSearch() async {
 
   // Use cases
   sl.registerLazySingleton(() => SearchContent(sl()));
+  sl.registerLazySingleton(() => SearchTasks(sl()));
   sl.registerLazySingleton(() => GetSearchSuggestions(sl()));
   sl.registerLazySingleton(() => GetRecentSearches(sl()));
 }

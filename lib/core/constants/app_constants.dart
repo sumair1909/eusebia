@@ -32,7 +32,7 @@ class AppConstants {
 
   // Database Constants
   static const String databaseName = 'eusebia.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 2;
 
   // Database Table Names
   static const String tasksTable = 'tasks';
@@ -99,4 +99,23 @@ class AppConstants {
       '''
     CREATE INDEX idx_search_history_query ON $searchHistoryTable($queryColumn)
   ''';
+
+  // Smart Priority Constants
+  static const String completionPatternsKey = 'completion_patterns';
+  static const String priorityAdjustmentsKey = 'priority_adjustments';
+
+  // Priority calculation weights
+  static const double dueDateWeight = 0.4;
+  static const double completionPatternWeight = 0.3;
+  static const double taskAgeWeight = 0.2;
+  static const double userPriorityWeight = 0.1;
+
+  // Time thresholds for priority adjustments (in hours)
+  static const int urgentThresholdHours = 24;
+  static const int highThresholdHours = 72;
+  static const int mediumThresholdHours = 168; // 1 week
+
+  // Smart priority update intervals
+  static const Duration smartPriorityUpdateInterval = Duration(hours: 1);
+  static const Duration completionPatternUpdateInterval = Duration(minutes: 30);
 }

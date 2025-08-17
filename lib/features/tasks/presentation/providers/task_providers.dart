@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/smart_priority_service.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/task.dart';
@@ -53,34 +54,50 @@ class TaskDetailState {
 
 // Main state notifier
 class TasksNotifier extends StateNotifier<TasksState> {
-  TasksNotifier() : super(const TasksState());
+  final TaskRepository _repository;
+  final SmartPriorityService _smartPriorityService;
+
+  TasksNotifier(this._repository, this._smartPriorityService)
+    : super(const TasksState());
 
   Future<void> loadTasks() async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await GetAllTasks(sl<TaskRepository>())(NoParams());
+    final result = await GetAllTasks(_repository)(NoParams());
 
     result.fold(
       (failure) =>
           state = state.copyWith(isLoading: false, error: failure.message),
-      (tasks) => state = state.copyWith(tasks: tasks, isLoading: false),
+      (tasks) async {
+        // Sort tasks with smart priority
+        final sortedTasks = await _smartPriorityService.sortTasksByPriority(
+          tasks,
+        );
+        state = state.copyWith(tasks: sortedTasks, isLoading: false);
+      },
     );
   }
 
   Future<void> refreshTasks() async {
     state = state.copyWith(isRefreshing: true, error: null);
 
-    final result = await GetAllTasks(sl<TaskRepository>())(NoParams());
+    final result = await GetAllTasks(_repository)(NoParams());
 
     result.fold(
       (failure) =>
           state = state.copyWith(isRefreshing: false, error: failure.message),
-      (tasks) => state = state.copyWith(tasks: tasks, isRefreshing: false),
+      (tasks) async {
+        // Sort tasks with smart priority
+        final sortedTasks = await _smartPriorityService.sortTasksByPriority(
+          tasks,
+        );
+        state = state.copyWith(tasks: sortedTasks, isRefreshing: false);
+      },
     );
   }
 
   Future<void> createTask(Task task) async {
-    final result = await CreateTask(sl<TaskRepository>())(
+    final result = await CreateTask(_repository)(
       CreateTaskParams(
         title: task.title,
         description: task.description,
@@ -98,7 +115,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 
   Future<void> updateTask(Task task) async {
-    final result = await UpdateTask(sl<TaskRepository>())(
+    final result = await UpdateTask(_repository)(
       UpdateTaskParams(
         id: task.id,
         title: task.title,
@@ -123,9 +140,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 
   Future<void> deleteTask(String taskId) async {
-    final result = await DeleteTask(sl<TaskRepository>())(
-      DeleteTaskParams(taskId),
-    );
+    final result = await DeleteTask(_repository)(DeleteTaskParams(taskId));
 
     result.fold((failure) => state = state.copyWith(error: failure.message), (
       success,
@@ -137,18 +152,94 @@ class TasksNotifier extends StateNotifier<TasksState> {
     });
   }
 
+  Future<void> toggleTaskCompletion(Task task) async {
+    final newStatus = task.status == TaskStatus.completed
+        ? TaskStatus.pending
+        : TaskStatus.completed;
+
+    final completedAt = newStatus == TaskStatus.completed
+        ? DateTime.now()
+        : null;
+
+    final updatedTask = task.copyWith(
+      status: newStatus,
+      completedAt: completedAt,
+    );
+
+    final result = await UpdateTask(_repository)(
+      UpdateTaskParams(
+        id: updatedTask.id,
+        title: updatedTask.title,
+        description: updatedTask.description,
+        status: updatedTask.status,
+        priority: updatedTask.priority,
+        dueDate: updatedTask.dueDate,
+        completedAt: updatedTask.completedAt,
+        tags: updatedTask.tags,
+        labels: updatedTask.labels,
+      ),
+    );
+
+    result.fold((failure) => state = state.copyWith(error: failure.message), (
+      updatedTask,
+    ) async {
+      // Update completion patterns if task was completed
+      if (newStatus == TaskStatus.completed) {
+        await _smartPriorityService.updateCompletionPatterns(updatedTask);
+      }
+
+      // Update the task in the list and sort with smart priority
+      final updatedTasks = state.tasks
+          .map((t) => t.id == updatedTask.id ? updatedTask : t)
+          .toList();
+
+      // Sort tasks with smart priority
+      await _sortTasksWithSmartPriority(updatedTasks);
+
+      state = state.copyWith(tasks: updatedTasks);
+    });
+  }
+
+  /// Sort tasks considering smart priority
+  Future<void> _sortTasksWithSmartPriority(List<Task> tasks) async {
+    final pendingTasks = tasks
+        .where((t) => t.status == TaskStatus.pending)
+        .toList();
+    final completedTasks = tasks
+        .where((t) => t.status == TaskStatus.completed)
+        .toList();
+
+    // Sort pending tasks by smart priority
+    final sortedPendingTasks = await _smartPriorityService.sortTasksByPriority(
+      pendingTasks,
+    );
+
+    // Sort completed tasks by completion date (most recent first)
+    completedTasks.sort((a, b) {
+      if (a.completedAt != null && b.completedAt != null) {
+        return b.completedAt!.compareTo(a.completedAt!);
+      }
+      return b.createdAt.compareTo(a.createdAt);
+    });
+
+    // Combine sorted pending and completed tasks
+    tasks.clear();
+    tasks.addAll(sortedPendingTasks);
+    tasks.addAll(completedTasks);
+  }
+
   void clearError() => state = state.copyWith(error: null);
 }
 
 class TaskDetailNotifier extends StateNotifier<TaskDetailState> {
-  TaskDetailNotifier() : super(const TaskDetailState());
+  final TaskRepository _repository;
+
+  TaskDetailNotifier(this._repository) : super(const TaskDetailState());
 
   Future<void> loadTask(String taskId) async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await GetTaskById(sl<TaskRepository>())(
-      GetTaskByIdParams(taskId),
-    );
+    final result = await GetTaskById(_repository)(GetTaskByIdParams(taskId));
 
     result.fold(
       (failure) =>
@@ -158,7 +249,7 @@ class TaskDetailNotifier extends StateNotifier<TaskDetailState> {
   }
 
   Future<void> updateTask(Task task) async {
-    final result = await UpdateTask(sl<TaskRepository>())(
+    final result = await UpdateTask(_repository)(
       UpdateTaskParams(
         id: task.id,
         title: task.title,
@@ -168,6 +259,7 @@ class TaskDetailNotifier extends StateNotifier<TaskDetailState> {
         dueDate: task.dueDate,
         completedAt: task.completedAt,
         tags: task.tags,
+        labels: task.labels,
       ),
     );
 
@@ -180,12 +272,18 @@ class TaskDetailNotifier extends StateNotifier<TaskDetailState> {
   void clearError() => state = state.copyWith(error: null);
 }
 
-// Main providers
+// Repository provider
+final taskRepositoryProvider = Provider<TaskRepository>(
+  (_) => sl<TaskRepository>(),
+);
+
+// Main providers with proper dependency injection
 final tasksNotifierProvider = StateNotifierProvider<TasksNotifier, TasksState>(
-  (ref) => TasksNotifier(),
+  (ref) =>
+      TasksNotifier(ref.read(taskRepositoryProvider), SmartPriorityService()),
 );
 
 final taskDetailNotifierProvider =
     StateNotifierProvider.family<TaskDetailNotifier, TaskDetailState, String>(
-      (ref, taskId) => TaskDetailNotifier(),
+      (ref, taskId) => TaskDetailNotifier(ref.read(taskRepositoryProvider)),
     );

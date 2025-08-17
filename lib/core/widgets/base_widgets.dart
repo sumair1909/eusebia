@@ -89,3 +89,4 @@ class BaseEmptyWidget extends StatelessWidget {
     );
   }
 }
+

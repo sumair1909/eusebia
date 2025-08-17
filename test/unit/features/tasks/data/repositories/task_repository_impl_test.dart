@@ -4,6 +4,7 @@ import 'package:eusebia_app/features/tasks/data/datasources/task_remote_data_sou
 import 'package:eusebia_app/features/tasks/data/models/task_model.dart';
 import 'package:eusebia_app/features/tasks/data/repositories/task_repository_impl.dart';
 import 'package:eusebia_app/features/tasks/domain/entities/task.dart';
+import 'package:eusebia_app/features/search/domain/usecases/search_content.dart';
 
 // Simple mocks for testing
 class MockTaskLocalDataSource implements TaskLocalDataSource {
@@ -39,6 +40,13 @@ class MockTaskLocalDataSource implements TaskLocalDataSource {
 
   @override
   Future<List<TaskModel>> searchTasks(String query) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<TaskModel>> searchTasksWithFilters(
+    TaskSearchParams params,
+  ) async {
     throw UnimplementedError();
   }
 }

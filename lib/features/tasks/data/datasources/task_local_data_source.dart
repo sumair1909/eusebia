@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/task_model.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../domain/entities/task.dart';
+import '../../../search/domain/usecases/search_content.dart';
 
 /// Local data source for tasks using SQLite
 abstract class TaskLocalDataSource {
@@ -26,6 +27,9 @@ abstract class TaskLocalDataSource {
 
   /// Search tasks by query
   Future<List<TaskModel>> searchTasks(String query);
+
+  /// Search tasks with advanced filters
+  Future<List<TaskModel>> searchTasksWithFilters(TaskSearchParams params);
 }
 
 class TaskLocalDataSourceImpl implements TaskLocalDataSource {
@@ -37,7 +41,8 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   Future<List<TaskModel>> getAllTasks() async {
     final List<Map<String, dynamic>> rows = await database.query(
       AppConstants.tasksTable,
-      orderBy: '${AppConstants.createdAtColumn} DESC',
+      orderBy:
+          '${AppConstants.dueDateColumn} ASC NULLS LAST, ${AppConstants.createdAtColumn} DESC',
     );
     return rows.map((row) => _fromRow(row)).toList();
   }
@@ -93,6 +98,118 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       whereArgs: ['%$query%', '%$query%'],
       orderBy: '${AppConstants.createdAtColumn} DESC',
     );
+    return rows.map((row) => _fromRow(row)).toList();
+  }
+
+  @override
+  Future<List<TaskModel>> searchTasksWithFilters(
+    TaskSearchParams params,
+  ) async {
+    final List<String> whereConditions = [];
+    final List<Object> whereArgs = [];
+
+    // Text search in title and description
+    if (params.query.isNotEmpty) {
+      whereConditions.add(
+        '(${AppConstants.titleColumn} LIKE ? OR ${AppConstants.descriptionColumn} LIKE ?)',
+      );
+      whereArgs.addAll(['%${params.query}%', '%${params.query}%']);
+    }
+
+    // Priority filter
+    if (params.priorities != null && params.priorities!.isNotEmpty) {
+      final priorityNames = params.priorities!.map((p) => p.name).join(',');
+      whereConditions.add('${AppConstants.priorityColumn} IN ($priorityNames)');
+    }
+
+    // Status filter
+    if (params.statuses != null && params.statuses!.isNotEmpty) {
+      final statusNames = params.statuses!.map((s) => s.name).join(',');
+      whereConditions.add('${AppConstants.statusColumn} IN ($statusNames)');
+    }
+
+    // Due date range filter
+    if (params.dueDateFrom != null) {
+      whereConditions.add('${AppConstants.dueDateColumn} >= ?');
+      whereArgs.add(params.dueDateFrom!.toIso8601String());
+    }
+
+    if (params.dueDateTo != null) {
+      whereConditions.add('${AppConstants.dueDateColumn} <= ?');
+      whereArgs.add(params.dueDateTo!.toIso8601String());
+    }
+
+    // Created date range filter
+    if (params.createdFrom != null) {
+      whereConditions.add('${AppConstants.createdAtColumn} >= ?');
+      whereArgs.add(params.createdFrom!.toIso8601String());
+    }
+
+    if (params.createdTo != null) {
+      whereConditions.add('${AppConstants.createdAtColumn} <= ?');
+      whereArgs.add(params.createdTo!.toIso8601String());
+    }
+
+    // Tags filter
+    if (params.tags != null && params.tags!.isNotEmpty) {
+      for (final tag in params.tags!) {
+        whereConditions.add('${AppConstants.tagsColumn} LIKE ?');
+        whereArgs.add('%$tag%');
+      }
+    }
+
+    // Labels filter
+    if (params.labels != null && params.labels!.isNotEmpty) {
+      for (final label in params.labels!) {
+        whereConditions.add('${AppConstants.labelsColumn} LIKE ?');
+        whereArgs.add('%$label%');
+      }
+    }
+
+    // Overdue filter
+    if (params.isOverdue == true) {
+      whereConditions.add(
+        '${AppConstants.dueDateColumn} < ? AND ${AppConstants.statusColumn} != ?',
+      );
+      whereArgs.addAll([
+        DateTime.now().toIso8601String(),
+        TaskStatus.completed.name,
+      ]);
+    }
+
+    // Due today filter
+    if (params.isDueToday == true) {
+      final today = DateTime.now();
+      final todayStart = DateTime(
+        today.year,
+        today.month,
+        today.day,
+      ).toIso8601String();
+      final todayEnd = DateTime(
+        today.year,
+        today.month,
+        today.day,
+        23,
+        59,
+        59,
+      ).toIso8601String();
+      whereConditions.add(
+        '${AppConstants.dueDateColumn} >= ? AND ${AppConstants.dueDateColumn} <= ?',
+      );
+      whereArgs.addAll([todayStart, todayEnd]);
+    }
+
+    final String whereClause = whereConditions.isNotEmpty
+        ? whereConditions.join(' AND ')
+        : '1=1';
+
+    final List<Map<String, dynamic>> rows = await database.query(
+      AppConstants.tasksTable,
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: '${AppConstants.createdAtColumn} DESC',
+    );
+
     return rows.map((row) => _fromRow(row)).toList();
   }
 

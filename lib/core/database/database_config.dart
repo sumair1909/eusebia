@@ -45,10 +45,9 @@ class DatabaseConfig {
     int oldVersion,
     int newVersion,
   ) async {
-    // TODO: Handle database schema upgrades here
-    // Example:
-    // if (oldVersion < 2) {
-    //   await db.execute('ALTER TABLE tasks ADD COLUMN priority INTEGER DEFAULT 0');
-    // }
+    if (oldVersion < 2) {
+      // Add labels column to tasks table
+      await db.execute('ALTER TABLE ${AppConstants.tasksTable} ADD COLUMN ${AppConstants.labelsColumn} TEXT');
+    }
   }
 }
