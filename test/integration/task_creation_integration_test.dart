@@ -355,4 +355,14 @@ class MockTaskRemoteDataSource implements TaskRemoteDataSource {
   Future<void> deleteTask(String id) async {
     throw UnimplementedError('Remote data source not implemented for testing');
   }
+
+  @override
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since) async {
+    throw UnimplementedError('Remote data source not implemented for testing');
+  }
+
+  @override
+  Future<List<TaskModel>> batchUpdateTasks(List<TaskModel> tasks) async {
+    throw UnimplementedError('Remote data source not implemented for testing');
+  }
 }

@@ -32,6 +32,7 @@ class DatabaseConfig {
     // Create tables
     await db.execute(AppConstants.createTasksTable);
     await db.execute(AppConstants.createSearchHistoryTable);
+    await db.execute(AppConstants.createSyncMetadataTable);
 
     // Create indexes
     await db.execute(AppConstants.createTasksTitleIndex);
@@ -47,7 +48,13 @@ class DatabaseConfig {
   ) async {
     if (oldVersion < 2) {
       // Add labels column to tasks table
-      await db.execute('ALTER TABLE ${AppConstants.tasksTable} ADD COLUMN ${AppConstants.labelsColumn} TEXT');
+      await db.execute(
+        'ALTER TABLE ${AppConstants.tasksTable} ADD COLUMN ${AppConstants.labelsColumn} TEXT',
+      );
+    }
+    if (oldVersion < 3) {
+      // Add sync_metadata table
+      await db.execute(AppConstants.createSyncMetadataTable);
     }
   }
 }

@@ -203,4 +203,71 @@ class TaskRepositoryImpl implements TaskRepository {
       return Left(CacheFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, bool>> syncWithRemote() async {
+    try {
+      final lastSync = await localDataSource.getLastSyncTimestamp();
+      final since =
+          lastSync ?? DateTime.now().subtract(const Duration(days: 30));
+
+      // Get local changes
+      final localChanges = await localDataSource.getTasksModifiedSince(since);
+
+      // Get remote changes
+      final remoteChanges = await remoteDataSource.getTasksModifiedSince(since);
+
+      // Merge changes with last-write-wins conflict resolution
+      final mergedTasks = <TaskModel>[];
+      final localTaskMap = {for (var task in localChanges) task.id: task};
+      final remoteTaskMap = {for (var task in remoteChanges) task.id: task};
+
+      // Process all task IDs
+      final allTaskIds = {...localTaskMap.keys, ...remoteTaskMap.keys};
+
+      for (final taskId in allTaskIds) {
+        final localTask = localTaskMap[taskId];
+        final remoteTask = remoteTaskMap[taskId];
+
+        if (localTask != null && remoteTask != null) {
+          // Conflict resolution: last-write-wins
+          final winningTask =
+              localTask.lastModified.isAfter(remoteTask.lastModified)
+              ? localTask
+              : remoteTask;
+          mergedTasks.add(winningTask);
+        } else if (localTask != null) {
+          mergedTasks.add(localTask);
+        } else if (remoteTask != null) {
+          mergedTasks.add(remoteTask);
+        }
+      }
+
+      // Update local database with merged data
+      for (final task in mergedTasks) {
+        await localDataSource.saveTask(task);
+      }
+
+      // Update sync timestamp
+      await localDataSource.updateLastSyncTimestamp(DateTime.now());
+
+      return const Right(true);
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Task>>> getTasksToSync() async {
+    try {
+      final lastSync = await localDataSource.getLastSyncTimestamp();
+      final since =
+          lastSync ?? DateTime.now().subtract(const Duration(days: 30));
+
+      final tasksToSync = await localDataSource.getTasksModifiedSince(since);
+      return Right(tasksToSync.map((model) => model.toEntity()).toList());
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
 }

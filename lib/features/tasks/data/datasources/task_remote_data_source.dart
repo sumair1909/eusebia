@@ -17,6 +17,12 @@ abstract class TaskRemoteDataSource {
 
   /// Delete task via remote API
   Future<void> deleteTask(String id);
+
+  /// Get tasks modified since a specific timestamp
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since);
+
+  /// Batch update tasks
+  Future<List<TaskModel>> batchUpdateTasks(List<TaskModel> tasks);
 }
 
 class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
@@ -99,6 +105,34 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
         return Exception('Request cancelled');
       default:
         return Exception('Network error: ${e.message}');
+    }
+  }
+
+  @override
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since) async {
+    try {
+      final response = await dio.get(
+        '$_basePath/sync',
+        queryParameters: {'since': since.toIso8601String()},
+      );
+      final List<dynamic> tasksJson = response.data['data'] ?? [];
+      return tasksJson.map((taskJson) => TaskModel.fromJson(taskJson)).toList();
+    } on DioException catch (e) {
+      throw _handleDioException(e);
+    }
+  }
+
+  @override
+  Future<List<TaskModel>> batchUpdateTasks(List<TaskModel> tasks) async {
+    try {
+      final response = await dio.post(
+        '$_basePath/batch',
+        data: {'tasks': tasks.map((task) => task.toJson()).toList()},
+      );
+      final List<dynamic> tasksJson = response.data['data'] ?? [];
+      return tasksJson.map((taskJson) => TaskModel.fromJson(taskJson)).toList();
+    } on DioException catch (e) {
+      throw _handleDioException(e);
     }
   }
 }

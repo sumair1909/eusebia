@@ -32,11 +32,12 @@ class AppConstants {
 
   // Database Constants
   static const String databaseName = 'eusebia.db';
-  static const int databaseVersion = 2;
+  static const int databaseVersion = 3;
 
   // Database Table Names
   static const String tasksTable = 'tasks';
   static const String searchHistoryTable = 'search_history';
+  static const String syncMetadataTable = 'sync_metadata';
 
   // Database Column Names
   static const String idColumn = 'id';
@@ -81,6 +82,14 @@ class AppConstants {
       $idColumn TEXT PRIMARY KEY,
       $queryColumn TEXT NOT NULL,
       $timestampColumn TEXT NOT NULL
+    )
+  ''';
+
+  static const String createSyncMetadataTable =
+      '''
+    CREATE TABLE $syncMetadataTable (
+      $idColumn TEXT PRIMARY KEY,
+      last_sync TEXT NOT NULL
     )
   ''';
 

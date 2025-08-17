@@ -9,6 +9,7 @@ import '../../domain/usecases/delete_task.dart';
 import '../../domain/usecases/get_all_tasks.dart';
 import '../../domain/usecases/get_task_by_id.dart';
 import '../../domain/usecases/update_task.dart';
+import '../../domain/usecases/sync_tasks.dart';
 
 // Simple state classes
 class TasksState {
@@ -16,12 +17,14 @@ class TasksState {
   final bool isLoading;
   final String? error;
   final bool isRefreshing;
+  final bool isSyncing;
 
   const TasksState({
     this.tasks = const [],
     this.isLoading = false,
     this.error,
     this.isRefreshing = false,
+    this.isSyncing = false,
   });
 
   TasksState copyWith({
@@ -29,11 +32,13 @@ class TasksState {
     bool? isLoading,
     String? error,
     bool? isRefreshing,
+    bool? isSyncing,
   }) => TasksState(
     tasks: tasks ?? this.tasks,
     isLoading: isLoading ?? this.isLoading,
     error: error,
     isRefreshing: isRefreshing ?? this.isRefreshing,
+    isSyncing: isSyncing ?? this.isSyncing,
   );
 }
 
@@ -229,6 +234,24 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 
   void clearError() => state = state.copyWith(error: null);
+
+  Future<void> syncTasks() async {
+    state = state.copyWith(isSyncing: true, error: null);
+
+    final result = await SyncTasks(_repository)(NoParams());
+
+    result.fold(
+      (failure) =>
+          state = state.copyWith(isSyncing: false, error: failure.message),
+      (success) {
+        if (success) {
+          // Reload tasks after successful sync
+          loadTasks();
+        }
+        state = state.copyWith(isSyncing: false);
+      },
+    );
+  }
 }
 
 class TaskDetailNotifier extends StateNotifier<TaskDetailState> {

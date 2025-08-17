@@ -48,6 +48,7 @@ class TestConfig {
       createdAt: createdAt ?? DateTime(2024, 1, 15),
       dueDate: dueDate,
       tags: tags,
+      lastModified: DateTime(2024, 1, 15),
     );
   }
 

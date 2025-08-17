@@ -49,6 +49,21 @@ class MockTaskLocalDataSource implements TaskLocalDataSource {
   ) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateLastSyncTimestamp(DateTime timestamp) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<DateTime?> getLastSyncTimestamp() async {
+    throw UnimplementedError();
+  }
 }
 
 class MockTaskRemoteDataSource implements TaskRemoteDataSource {
@@ -74,6 +89,16 @@ class MockTaskRemoteDataSource implements TaskRemoteDataSource {
 
   @override
   Future<bool> deleteTask(String id) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<TaskModel>> batchUpdateTasks(List<TaskModel> tasks) async {
     throw UnimplementedError();
   }
 }
@@ -117,6 +142,7 @@ void main() {
         createdAt: DateTime(2024, 1, 15),
         dueDate: DateTime(2024, 1, 20),
         tags: ['work'],
+        lastModified: DateTime(2024, 1, 15),
       );
 
       expect(taskModel.id, '1');
@@ -139,6 +165,7 @@ void main() {
         createdAt: DateTime(2024, 1, 15),
         dueDate: DateTime(2024, 1, 20),
         tags: ['work'],
+        lastModified: DateTime(2024, 1, 15),
       );
 
       final entity = taskModel.toEntity();

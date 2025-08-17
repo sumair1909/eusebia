@@ -67,6 +67,16 @@ class MockTaskRepository implements TaskRepository {
     // TODO: implement getAllLabels
     throw UnimplementedError();
   }
+
+  @override
+  Future<Either<Failure, bool>> syncWithRemote() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<Failure, List<Task>>> getTasksToSync() async {
+    throw UnimplementedError();
+  }
 }
 
 void main() {

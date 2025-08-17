@@ -30,6 +30,15 @@ abstract class TaskLocalDataSource {
 
   /// Search tasks with advanced filters
   Future<List<TaskModel>> searchTasksWithFilters(TaskSearchParams params);
+
+  /// Get tasks modified since a specific timestamp
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since);
+
+  /// Update last sync timestamp
+  Future<void> updateLastSyncTimestamp(DateTime timestamp);
+
+  /// Get last sync timestamp
+  Future<DateTime?> getLastSyncTimestamp();
 }
 
 class TaskLocalDataSourceImpl implements TaskLocalDataSource {
@@ -213,6 +222,36 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
     return rows.map((row) => _fromRow(row)).toList();
   }
 
+  @override
+  Future<List<TaskModel>> getTasksModifiedSince(DateTime since) async {
+    final List<Map<String, dynamic>> rows = await database.query(
+      AppConstants.tasksTable,
+      where: '${AppConstants.updatedAtColumn} > ?',
+      whereArgs: [since.toIso8601String()],
+    );
+    return rows.map((row) => _fromRow(row)).toList();
+  }
+
+  @override
+  Future<void> updateLastSyncTimestamp(DateTime timestamp) async {
+    await database.insert(AppConstants.syncMetadataTable, {
+      'last_sync': timestamp.toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<DateTime?> getLastSyncTimestamp() async {
+    final List<Map<String, dynamic>> rows = await database.query(
+      AppConstants.syncMetadataTable,
+      where: 'last_sync IS NOT NULL',
+      limit: 1,
+    );
+    if (rows.isNotEmpty) {
+      return DateTime.parse(rows.first['last_sync'] as String);
+    }
+    return null;
+  }
+
   /// Convert database row to TaskModel
   TaskModel _fromRow(Map<String, dynamic> row) {
     return TaskModel(
@@ -244,6 +283,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
               jsonDecode(row[AppConstants.labelsColumn] as String),
             )
           : [],
+      lastModified: DateTime.parse(row[AppConstants.updatedAtColumn] as String),
     );
   }
 
@@ -260,7 +300,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       AppConstants.tagsColumn: jsonEncode(task.tags),
       AppConstants.labelsColumn: jsonEncode(task.labels),
       AppConstants.createdAtColumn: task.createdAt.toIso8601String(),
-      AppConstants.updatedAtColumn: DateTime.now().toIso8601String(),
+      AppConstants.updatedAtColumn: task.lastModified.toIso8601String(),
     };
   }
 }

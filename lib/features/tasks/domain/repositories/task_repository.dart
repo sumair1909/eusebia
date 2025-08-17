@@ -37,4 +37,10 @@ abstract class TaskRepository {
 
   /// Get all unique labels from existing tasks
   Future<Either<Failure, List<String>>> getAllLabels();
+
+  /// Sync local database with remote database
+  Future<Either<Failure, bool>> syncWithRemote();
+
+  /// Get tasks that need to be synced (modified since last sync)
+  Future<Either<Failure, List<Task>>> getTasksToSync();
 }
