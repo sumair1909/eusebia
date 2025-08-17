@@ -20,6 +20,12 @@ import '../../features/search/domain/repositories/search_repository.dart';
 import '../../features/search/domain/usecases/search_content.dart';
 import '../../features/search/domain/usecases/get_search_suggestions.dart';
 import '../../features/search/domain/usecases/get_recent_searches.dart';
+import '../../features/settings/data/datasources/settings_local_data_source.dart';
+import '../../features/settings/data/repositories/settings_repository_impl.dart';
+import '../../features/settings/domain/repositories/settings_repository.dart';
+import '../../features/settings/domain/usecases/get_settings.dart';
+import '../../features/settings/domain/usecases/save_settings.dart';
+import '../../features/settings/domain/usecases/update_theme_mode.dart';
 
 /// Global GetIt instance for dependency injection
 final GetIt sl = GetIt.instance;
@@ -115,5 +121,18 @@ Future<void> _initSearch() async {
 
 /// Initialize settings feature dependencies
 Future<void> _initSettings() async {
-  // TODO: Register settings repositories and use cases
+  // Data sources
+  sl.registerLazySingleton<SettingsLocalDataSource>(
+    () => SettingsLocalDataSourceImpl(sl<SharedPreferences>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetSettings(sl()));
+  sl.registerLazySingleton(() => SaveSettings(sl()));
+  sl.registerLazySingleton(() => UpdateThemeMode(sl()));
 }
