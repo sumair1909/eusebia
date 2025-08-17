@@ -12,6 +12,7 @@ class TaskModel extends Equatable {
   final DateTime? dueDate;
   final DateTime? completedAt;
   final List<String> tags;
+  final List<String> labels;
 
   const TaskModel({
     required this.id,
@@ -23,6 +24,7 @@ class TaskModel extends Equatable {
     this.dueDate,
     this.completedAt,
     this.tags = const [],
+    this.labels = const [],
   });
 
   /// Convert TaskModel to Task entity
@@ -37,6 +39,7 @@ class TaskModel extends Equatable {
       dueDate: dueDate,
       completedAt: completedAt,
       tags: tags,
+      labels: labels,
     );
   }
 
@@ -52,6 +55,7 @@ class TaskModel extends Equatable {
       dueDate: task.dueDate,
       completedAt: task.completedAt,
       tags: task.tags,
+      labels: task.labels,
     );
   }
 
@@ -67,6 +71,7 @@ class TaskModel extends Equatable {
       'dueDate': dueDate?.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'tags': tags,
+      'labels': labels,
     };
   }
 
@@ -92,6 +97,7 @@ class TaskModel extends Equatable {
           ? DateTime.parse(json['completedAt'] as String)
           : null,
       tags: List<String>.from(json['tags'] ?? []),
+      labels: List<String>.from(json['labels'] ?? []),
     );
   }
 
@@ -106,6 +112,7 @@ class TaskModel extends Equatable {
     DateTime? dueDate,
     DateTime? completedAt,
     List<String>? tags,
+    List<String>? labels,
   }) {
     return TaskModel(
       id: id ?? this.id,
@@ -117,6 +124,7 @@ class TaskModel extends Equatable {
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
       tags: tags ?? this.tags,
+      labels: labels ?? this.labels,
     );
   }
 
@@ -131,5 +139,6 @@ class TaskModel extends Equatable {
     dueDate,
     completedAt,
     tags,
+    labels,
   ];
 }

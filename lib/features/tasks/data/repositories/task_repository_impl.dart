@@ -187,4 +187,20 @@ class TaskRepositoryImpl implements TaskRepository {
       return Left(CacheFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, List<String>>> getAllLabels() async {
+    try {
+      final allTasks = await getAllTasks();
+      return allTasks.map((tasks) {
+        final allLabels = <String>{};
+        for (final task in tasks) {
+          allLabels.addAll(task.labels);
+        }
+        return allLabels.toList()..sort();
+      });
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
 }

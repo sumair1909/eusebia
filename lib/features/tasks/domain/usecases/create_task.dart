@@ -11,6 +11,7 @@ class CreateTaskParams {
   final TaskPriority priority;
   final DateTime? dueDate;
   final List<String> tags;
+  final List<String> labels;
 
   const CreateTaskParams({
     required this.title,
@@ -18,6 +19,7 @@ class CreateTaskParams {
     this.priority = TaskPriority.medium,
     this.dueDate,
     this.tags = const [],
+    this.labels = const [],
   });
 }
 
@@ -37,6 +39,7 @@ class CreateTask implements UseCase<Task, CreateTaskParams> {
       createdAt: DateTime.now(),
       dueDate: params.dueDate,
       tags: params.tags,
+      labels: params.labels,
     );
 
     return await repository.createTask(task);

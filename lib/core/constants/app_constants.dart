@@ -51,6 +51,7 @@ class AppConstants {
   static const String dueDateColumn = 'due_date';
   static const String completedAtColumn = 'completed_at';
   static const String tagsColumn = 'tags';
+  static const String labelsColumn = 'labels';
 
   // Search History Table Columns
   static const String queryColumn = 'query';
@@ -68,6 +69,7 @@ class AppConstants {
       $dueDateColumn TEXT,
       $completedAtColumn TEXT,
       $tagsColumn TEXT,
+      $labelsColumn TEXT,
       $createdAtColumn TEXT NOT NULL,
       $updatedAtColumn TEXT NOT NULL
     )

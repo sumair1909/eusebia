@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/task.dart';
+import '../../domain/repositories/task_repository.dart';
 import '../providers/task_providers.dart';
+import '../widgets/labels_bottom_sheet.dart';
 
 class EditTaskPage extends ConsumerStatefulWidget {
   final Task task;
@@ -21,6 +24,9 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
   late TaskPriority _priority;
   late TaskStatus _status;
   DateTime? _dueDate;
+  TimeOfDay? _dueTime;
+  List<String> _selectedLabels = [];
+  List<String> _allLabels = [];
   bool _isLoading = false;
 
   @override
@@ -32,7 +38,22 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
     );
     _priority = widget.task.priority;
     _status = widget.task.status;
-    _dueDate = widget.task.dueDate;
+    _selectedLabels = List.from(widget.task.labels);
+
+    // Initialize date and time from existing task
+    if (widget.task.dueDate != null) {
+      _dueDate = DateTime(
+        widget.task.dueDate!.year,
+        widget.task.dueDate!.month,
+        widget.task.dueDate!.day,
+      );
+      _dueTime = TimeOfDay(
+        hour: widget.task.dueDate!.hour,
+        minute: widget.task.dueDate!.minute,
+      );
+    }
+
+    _loadAllLabels();
   }
 
   @override
@@ -42,12 +63,48 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
     super.dispose();
   }
 
+  Future<void> _loadAllLabels() async {
+    try {
+      final result = await sl<TaskRepository>().getAllLabels();
+      result.fold(
+        (failure) => null,
+        (labels) => setState(() => _allLabels = labels),
+      );
+    } catch (e) {
+      // Handle error silently for now
+    }
+  }
+
   Future<void> _updateTask() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
+      // Combine date and time if both are selected
+      DateTime? finalDueDate;
+      if (_dueDate != null) {
+        if (_dueTime != null) {
+          // Combine date and time
+          finalDueDate = DateTime(
+            _dueDate!.year,
+            _dueDate!.month,
+            _dueDate!.day,
+            _dueTime!.hour,
+            _dueTime!.minute,
+          );
+        } else {
+          // Only date selected, set to end of day
+          finalDueDate = DateTime(
+            _dueDate!.year,
+            _dueDate!.month,
+            _dueDate!.day,
+            23,
+            59,
+          );
+        }
+      }
+
       // Create updated task object
       final updatedTask = widget.task.copyWith(
         title: _titleController.text.trim(),
@@ -56,7 +113,8 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
             : _descriptionController.text.trim(),
         priority: _priority,
         status: _status,
-        dueDate: _dueDate,
+        dueDate: finalDueDate,
+        labels: _selectedLabels,
       );
 
       // Use Riverpod to update the task
@@ -95,6 +153,36 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
     }
   }
 
+  Future<void> _selectDueTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _dueTime ?? TimeOfDay.now(),
+    );
+
+    if (picked != null) {
+      setState(() => _dueTime = picked);
+    }
+  }
+
+  void _showLabelsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => LabelsBottomSheet(
+        selectedLabels: _selectedLabels,
+        allLabels: _allLabels,
+        onLabelsChanged: (labels) {
+          setState(() {
+            _selectedLabels = labels;
+            _allLabels =
+                labels.where((label) => !_allLabels.contains(label)).toList() +
+                _allLabels;
+          });
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,6 +207,10 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
             _buildPrioritySelector(),
             SizedBox(height: AppConstants.mediumPadding),
             _buildDueDateSelector(),
+            SizedBox(height: AppConstants.mediumPadding),
+            _buildDueTimeSelector(),
+            SizedBox(height: AppConstants.mediumPadding),
+            _buildLabelsSelector(),
             SizedBox(height: AppConstants.largePadding),
             _buildUpdateButton(),
           ],
@@ -233,6 +325,65 @@ class _EditTaskPageState extends ConsumerState<EditTaskPage> {
           _dueDate == null
               ? 'No due date'
               : '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDueTimeSelector() {
+    return InkWell(
+      onTap: _dueDate == null ? null : _selectDueTime,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Due Time (Optional)',
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.access_time),
+          hintText: _dueDate == null ? 'Select a date first' : null,
+        ),
+        child: Text(
+          _dueDate == null
+              ? 'Select a date first'
+              : _dueTime == null
+              ? 'No specific time'
+              : '${_dueTime!.hour.toString().padLeft(2, '0')}:${_dueTime!.minute.toString().padLeft(2, '0')}',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabelsSelector() {
+    return InkWell(
+      onTap: _showLabelsBottomSheet,
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Labels',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.label),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_selectedLabels.isEmpty)
+              const Text('No labels selected')
+            else
+              Wrap(
+                spacing: AppConstants.smallPadding,
+                runSpacing: AppConstants.smallPadding,
+                children: _selectedLabels
+                    .map(
+                      (label) => Chip(
+                        label: Text(label),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedLabels.remove(label);
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
         ),
       ),
     );

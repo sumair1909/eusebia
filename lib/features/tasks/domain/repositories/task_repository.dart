@@ -34,4 +34,7 @@ abstract class TaskRepository {
 
   /// Get tasks by tags
   Future<Either<Failure, List<Task>>> getTasksByTags(List<String> tags);
+
+  /// Get all unique labels from existing tasks
+  Future<Either<Failure, List<String>>> getAllLabels();
 }

@@ -14,6 +14,7 @@ class UpdateTaskParams {
   final DateTime? dueDate;
   final DateTime? completedAt;
   final List<String>? tags;
+  final List<String>? labels;
 
   const UpdateTaskParams({
     required this.id,
@@ -24,6 +25,7 @@ class UpdateTaskParams {
     this.dueDate,
     this.completedAt,
     this.tags,
+    this.labels,
   });
 }
 
@@ -47,6 +49,7 @@ class UpdateTask implements UseCase<Task, UpdateTaskParams> {
         dueDate: params.dueDate,
         completedAt: params.completedAt,
         tags: params.tags,
+        labels: params.labels,
       );
 
       return repository.updateTask(updatedTask);

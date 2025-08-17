@@ -28,13 +28,12 @@ class TasksState {
     bool? isLoading,
     String? error,
     bool? isRefreshing,
-  }) =>
-      TasksState(
-        tasks: tasks ?? this.tasks,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-        isRefreshing: isRefreshing ?? this.isRefreshing,
-      );
+  }) => TasksState(
+    tasks: tasks ?? this.tasks,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+    isRefreshing: isRefreshing ?? this.isRefreshing,
+  );
 }
 
 class TaskDetailState {
@@ -58,34 +57,39 @@ class TasksNotifier extends StateNotifier<TasksState> {
 
   Future<void> loadTasks() async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     final result = await GetAllTasks(sl<TaskRepository>())(NoParams());
-    
+
     result.fold(
-      (failure) => state = state.copyWith(isLoading: false, error: failure.message),
+      (failure) =>
+          state = state.copyWith(isLoading: false, error: failure.message),
       (tasks) => state = state.copyWith(tasks: tasks, isLoading: false),
     );
   }
 
   Future<void> refreshTasks() async {
     state = state.copyWith(isRefreshing: true, error: null);
-    
+
     final result = await GetAllTasks(sl<TaskRepository>())(NoParams());
-    
+
     result.fold(
-      (failure) => state = state.copyWith(isRefreshing: false, error: failure.message),
+      (failure) =>
+          state = state.copyWith(isRefreshing: false, error: failure.message),
       (tasks) => state = state.copyWith(tasks: tasks, isRefreshing: false),
     );
   }
 
   Future<void> createTask(Task task) async {
-    final result = await CreateTask(sl<TaskRepository>())(CreateTaskParams(
-      title: task.title,
-      description: task.description,
-      priority: task.priority,
-      dueDate: task.dueDate,
-      tags: task.tags,
-    ));
+    final result = await CreateTask(sl<TaskRepository>())(
+      CreateTaskParams(
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        tags: task.tags,
+        labels: task.labels,
+      ),
+    );
 
     result.fold(
       (failure) => state = state.copyWith(error: failure.message),
@@ -94,38 +98,43 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 
   Future<void> updateTask(Task task) async {
-    final result = await UpdateTask(sl<TaskRepository>())(UpdateTaskParams(
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-      completedAt: task.completedAt,
-      tags: task.tags,
-    ));
-
-    result.fold(
-      (failure) => state = state.copyWith(error: failure.message),
-      (updatedTask) {
-        final updatedTasks = state.tasks.map((t) => t.id == updatedTask.id ? updatedTask : t).toList();
-        state = state.copyWith(tasks: updatedTasks);
-      },
+    final result = await UpdateTask(sl<TaskRepository>())(
+      UpdateTaskParams(
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        completedAt: task.completedAt,
+        tags: task.tags,
+        labels: task.labels,
+      ),
     );
+
+    result.fold((failure) => state = state.copyWith(error: failure.message), (
+      updatedTask,
+    ) {
+      final updatedTasks = state.tasks
+          .map((t) => t.id == updatedTask.id ? updatedTask : t)
+          .toList();
+      state = state.copyWith(tasks: updatedTasks);
+    });
   }
 
   Future<void> deleteTask(String taskId) async {
-    final result = await DeleteTask(sl<TaskRepository>())(DeleteTaskParams(taskId));
-
-    result.fold(
-      (failure) => state = state.copyWith(error: failure.message),
-      (success) {
-        if (success) {
-          final updatedTasks = state.tasks.where((t) => t.id != taskId).toList();
-          state = state.copyWith(tasks: updatedTasks);
-        }
-      },
+    final result = await DeleteTask(sl<TaskRepository>())(
+      DeleteTaskParams(taskId),
     );
+
+    result.fold((failure) => state = state.copyWith(error: failure.message), (
+      success,
+    ) {
+      if (success) {
+        final updatedTasks = state.tasks.where((t) => t.id != taskId).toList();
+        state = state.copyWith(tasks: updatedTasks);
+      }
+    });
   }
 
   void clearError() => state = state.copyWith(error: null);
@@ -136,26 +145,31 @@ class TaskDetailNotifier extends StateNotifier<TaskDetailState> {
 
   Future<void> loadTask(String taskId) async {
     state = state.copyWith(isLoading: true, error: null);
-    
-    final result = await GetTaskById(sl<TaskRepository>())(GetTaskByIdParams(taskId));
-    
+
+    final result = await GetTaskById(sl<TaskRepository>())(
+      GetTaskByIdParams(taskId),
+    );
+
     result.fold(
-      (failure) => state = state.copyWith(isLoading: false, error: failure.message),
+      (failure) =>
+          state = state.copyWith(isLoading: false, error: failure.message),
       (task) => state = state.copyWith(task: task, isLoading: false),
     );
   }
 
   Future<void> updateTask(Task task) async {
-    final result = await UpdateTask(sl<TaskRepository>())(UpdateTaskParams(
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-      completedAt: task.completedAt,
-      tags: task.tags,
-    ));
+    final result = await UpdateTask(sl<TaskRepository>())(
+      UpdateTaskParams(
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        completedAt: task.completedAt,
+        tags: task.tags,
+      ),
+    );
 
     result.fold(
       (failure) => state = state.copyWith(error: failure.message),
@@ -167,6 +181,11 @@ class TaskDetailNotifier extends StateNotifier<TaskDetailState> {
 }
 
 // Main providers
-final tasksNotifierProvider = StateNotifierProvider<TasksNotifier, TasksState>((ref) => TasksNotifier());
+final tasksNotifierProvider = StateNotifierProvider<TasksNotifier, TasksState>(
+  (ref) => TasksNotifier(),
+);
 
-final taskDetailNotifierProvider = StateNotifierProvider.family<TaskDetailNotifier, TaskDetailState, String>((ref, taskId) => TaskDetailNotifier());
+final taskDetailNotifierProvider =
+    StateNotifierProvider.family<TaskDetailNotifier, TaskDetailState, String>(
+      (ref, taskId) => TaskDetailNotifier(),
+    );

@@ -61,6 +61,12 @@ class MockTaskRepository implements TaskRepository {
   Future<Either<Failure, List<Task>>> getTasksByTags(List<String> tags) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<Either<Failure, List<String>>> getAllLabels() {
+    // TODO: implement getAllLabels
+    throw UnimplementedError();
+  }
 }
 
 void main() {

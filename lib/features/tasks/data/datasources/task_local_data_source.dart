@@ -122,6 +122,11 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
               jsonDecode(row[AppConstants.tagsColumn] as String),
             )
           : [],
+      labels: row[AppConstants.labelsColumn] != null
+          ? List<String>.from(
+              jsonDecode(row[AppConstants.labelsColumn] as String),
+            )
+          : [],
     );
   }
 
@@ -136,6 +141,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       AppConstants.dueDateColumn: task.dueDate?.toIso8601String(),
       AppConstants.completedAtColumn: task.completedAt?.toIso8601String(),
       AppConstants.tagsColumn: jsonEncode(task.tags),
+      AppConstants.labelsColumn: jsonEncode(task.labels),
       AppConstants.createdAtColumn: task.createdAt.toIso8601String(),
       AppConstants.updatedAtColumn: DateTime.now().toIso8601String(),
     };

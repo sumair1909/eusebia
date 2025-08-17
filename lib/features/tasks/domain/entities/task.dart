@@ -11,6 +11,7 @@ class Task extends Equatable {
   final DateTime? dueDate;
   final DateTime? completedAt;
   final List<String> tags;
+  final List<String> labels;
 
   const Task({
     required this.id,
@@ -22,6 +23,7 @@ class Task extends Equatable {
     this.dueDate,
     this.completedAt,
     this.tags = const [],
+    this.labels = const [],
   });
 
   /// Create a copy of this task with updated fields
@@ -35,6 +37,7 @@ class Task extends Equatable {
     DateTime? dueDate,
     DateTime? completedAt,
     List<String>? tags,
+    List<String>? labels,
   }) {
     return Task(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class Task extends Equatable {
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
       tags: tags ?? this.tags,
+      labels: labels ?? this.labels,
     );
   }
 
@@ -75,6 +79,7 @@ class Task extends Equatable {
     dueDate,
     completedAt,
     tags,
+    labels,
   ];
 }
 
